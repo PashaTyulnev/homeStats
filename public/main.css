@@ -1,0 +1,123 @@
+body{
+    font-family: "PT Sans", sans-serif;
+    font-weight: 300;
+    font-style: normal;
+    background: #181818;
+    overflow-y: hidden;
+}
+
+.flex{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    margin: 10px;
+}
+h2{
+    color: #e8e8e8;
+    margin-top: 20px;
+    font-weight: 300;
+}
+h3{
+    font-weight: 300;
+}
+.box{
+    background-image: linear-gradient(to bottom right, #121C84, #8278DA);
+    width: 100%;
+    height: 18vh;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color:white;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    font-size: 1em;
+}
+
+.lds-ellipsis {
+    display: inline-block;
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+.lds-ellipsis div {
+    position: absolute;
+    top: 33px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #fff;
+    animation-timing-function: cubic-bezier(0, 1, 1, 0);
+}
+.lds-ellipsis div:nth-child(1) {
+    left: 8px;
+    animation: lds-ellipsis1 0.6s infinite;
+}
+.lds-ellipsis div:nth-child(2) {
+    left: 8px;
+    animation: lds-ellipsis2 0.6s infinite;
+}
+.lds-ellipsis div:nth-child(3) {
+    left: 32px;
+    animation: lds-ellipsis2 0.6s infinite;
+}
+.lds-ellipsis div:nth-child(4) {
+    left: 56px;
+    animation: lds-ellipsis3 0.6s infinite;
+}
+@keyframes lds-ellipsis1 {
+    0% {
+        transform: scale(0);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+@keyframes lds-ellipsis3 {
+    0% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(0);
+    }
+}
+@keyframes lds-ellipsis2 {
+    0% {
+        transform: translate(0, 0);
+    }
+    100% {
+        transform: translate(24px, 0);
+    }
+}
+
+.menu{
+    display: flex;
+    justify-content: space-evenly;
+    gap:5px;
+}
+
+.navElement{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 20px;
+    border-radius: 20px;
+    background-image: linear-gradient(to bottom right, #00C0FF, #4218B8);
+    color: white;
+    font-weight: 600;
+}
+
+.active{
+    box-shadow: inset 0 0 15px #000;
+}
+
+a{
+    text-decoration: none;
+}
+
+.dustNote{
+    text-align: center;
+}

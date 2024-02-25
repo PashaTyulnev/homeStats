@@ -1,0 +1,33 @@
+<div class="flex">
+    <div>
+        <h2>Важные статы</h2>
+    </div>
+    <div class="box">
+        <h2><i class="fa-solid fa-temperature-three-quarters"></i> Температура</h2>
+        <h3>{{ lastLog.temperature}} °C</h3>
+    </div>
+    <div class="box">
+        <h2><i class="fa-solid fa-droplet"></i> Влажность</h2>
+        <h3>{{ lastLog.humidity}} °C %</h3>
+    </div>
+    <div class="box">
+        <h2><i class="fa-solid fa-viruses"></i> Пыль</h2>
+        <h3>{{ lastLog.dustValue}}</h3>
+        {% if lastLog.dustValue > 0 and lastLog.dustValue <= 50 %}
+            <p class="dustNote">Высокое качество воздуха</p>
+        {% elseif lastLog.dustValue > 50 and lastLog.dustValue <= 100 %}
+            <p class="dustNote">Приемлемое качество воздуха</p>
+        {% elseif lastLog.dustValue > 101 and lastLog.dustValue <= 150 %}
+            <p class="dustNote">Негативное влияние на людей с обострённой восприимчивостью к пыли</p>
+        {% elseif lastLog.dustValue > 151 and lastLog.dustValue <= 200 %}
+            <p class="dustNote">Негативное влияние на все группы людей</p>
+        {% elseif lastLog.dustValue > 201 %}
+            <p class="dustNote">Крайняя степень загрязнённости воздуха пулью</p>
+        {% endif %}
+    </div>
+
+    <div class="box">
+        <h2><i class="fa-solid fa-viruses"></i> Плотность пыли мкг/м³</h2>
+        <h3>{{ lastLog.dustDensity}}</h3>
+    </div>
+</div>
