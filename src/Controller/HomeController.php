@@ -25,8 +25,9 @@ class HomeController extends AbstractController
     #[Route('/', name: 'home')]
     public function list(): \Symfony\Component\HttpFoundation\Response
     {
-        $this->twig->addGlobal('currentPage', 'current');
-        return $this->render('home.html.twig');
+        $lastLog = $this->homeService->getLatestData();
+
+        return $this->render('logValues.html.twig', ['lastLog' => $lastLog]);
     }
 
     #[Route('/stats', name: 'stats')]
@@ -40,6 +41,7 @@ class HomeController extends AbstractController
     public function getLastLogData(): \Symfony\Component\HttpFoundation\Response
     {
         $lastLog = $this->homeService->getLatestData();
+
         return $this->render('logValues.html.twig', ['lastLog' => $lastLog]);
     }
 

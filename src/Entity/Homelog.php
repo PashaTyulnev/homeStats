@@ -32,6 +32,12 @@ class Homelog
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $datetime = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?float $co2value = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?float $co2temp = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -105,6 +111,30 @@ class Homelog
     public function setDatetime(\DateTimeInterface $datetime): static
     {
         $this->datetime = $datetime;
+
+        return $this;
+    }
+
+    public function getCo2value(): ?float
+    {
+        return $this->co2value;
+    }
+
+    public function setCo2value(?float $co2value): static
+    {
+        $this->co2value = $co2value;
+
+        return $this;
+    }
+
+    public function getCo2temp(): ?float
+    {
+        return $this->co2temp;
+    }
+
+    public function setCo2temp(?float $co2temp): static
+    {
+        $this->co2temp = $co2temp;
 
         return $this;
     }

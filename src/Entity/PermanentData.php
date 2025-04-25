@@ -32,6 +32,12 @@ class PermanentData
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $datetime = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?float $co2Value = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?float $co2temp = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -105,6 +111,30 @@ class PermanentData
     public function setDatetime(\DateTimeInterface $datetime): static
     {
         $this->datetime = $datetime;
+
+        return $this;
+    }
+
+    public function getCo2Value(): ?float
+    {
+        return $this->co2Value;
+    }
+
+    public function setCo2Value(?float $co2Value): static
+    {
+        $this->co2Value = $co2Value;
+
+        return $this;
+    }
+
+    public function getCo2temp(): ?float
+    {
+        return $this->co2temp;
+    }
+
+    public function setCo2temp(?float $co2temp): static
+    {
+        $this->co2temp = $co2temp;
 
         return $this;
     }

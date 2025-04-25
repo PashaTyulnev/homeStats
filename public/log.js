@@ -9,5 +9,6 @@ function loadData() {
 
 document.addEventListener("DOMContentLoaded", function () {
     //jede 10 sekunden
-    setInterval(loadData, 2000)
+   loadData()
+   //  setInterval(loadData, 2000)
 });

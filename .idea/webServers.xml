@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="69989024-de6d-4e7f-b04e-a4919f6812fa" name="ithorizon">
+        <fileTransfer accessType="SFTP" host="w01f177d.kasserver.com" port="22" sshConfigId="8598fea3-090b-4cbc-b4db-734d9f374275" sshConfig="ssh-w01f177d@w01f177d.kasserver.com:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
