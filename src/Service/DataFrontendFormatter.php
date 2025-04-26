@@ -174,4 +174,33 @@ class DataFrontendFormatter
             'issues' => $messages,
         ];
     }
+
+    public static function formatOutsideWeather(float $getDresdenWeatherData): array
+    {
+        $formattedData['value'] = $getDresdenWeatherData . ' °C';
+
+        if ($getDresdenWeatherData < 0) {
+            $formattedData['color'] = 'blue';
+            $formattedData['description'] = 'Freezing';
+        } elseif ($getDresdenWeatherData <= 10){
+            $formattedData['color'] = 'lightgreen';
+            $formattedData['description'] = 'Cold';
+        } elseif ($getDresdenWeatherData <= 15) {
+            $formattedData['color'] = 'green';
+            $formattedData['description'] = 'Okay';
+        }elseif ($getDresdenWeatherData <= 20) {
+            $formattedData['color'] = 'green';
+            $formattedData['description'] = 'Warm';
+        }
+        elseif ($getDresdenWeatherData <= 30) {
+            $formattedData['color'] = 'orange';
+            $formattedData['description'] = 'Hot';
+        } else {
+            $formattedData['color'] = 'red';
+            $formattedData['description'] = 'Extremely Hot';
+        }
+
+
+        return $formattedData;
+    }
 }

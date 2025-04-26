@@ -9,6 +9,7 @@ use App\Repository\PermanentDataRepository;
 use DateTime;
 use DateTimeZone;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class HomeService
 {
@@ -18,7 +19,8 @@ class HomeService
     public function __construct(
         private EntityManagerInterface $entityManager,
         private HomelogRepository $homelogRepository,
-        private PermanentDataRepository $permanentDataRepository
+        private PermanentDataRepository $permanentDataRepository,
+        readonly HttpClientInterface $httpClient
     ) {}
 
     public function logData(array $requestData): void
@@ -212,6 +214,9 @@ class HomeService
                 $latestData->getCo2Value(),
                 $latestData->getDustDensity()
             ),
+            'outside' => DataFrontendFormatter::formatOutsideWeather($this->getDresdenWeatherData()),
+            'currentTime' => (new DateTime())->setTimezone(new DateTimeZone(self::BERLIN_TIMEZONE))->format('H:i:s'),
+            'currentDate' => (new DateTime())->setTimezone(new DateTimeZone(self::BERLIN_TIMEZONE))->format('d.m.Y'),
         ];
     }
 
@@ -253,5 +258,21 @@ class HomeService
                 $data[$key] = array_slice($data[$key], $offset);
             }
         }
+    }
+
+    private function getDresdenWeatherData(): float
+    {
+        $url = 'https://api.open-meteo.com/v1/forecast?latitude=51.0509&longitude=13.7373&current_weather=true';
+
+        //nutze http client
+        $response = $this->httpClient->request('GET', $url);
+
+        $content = $response->getContent();
+
+        //json to array
+        $data = json_decode($content, true);
+
+        return $data['current_weather']['temperature'] ?? 0;
+
     }
 }

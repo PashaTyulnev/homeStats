@@ -25,6 +25,26 @@
         <div class="card-gradient temp-gradient"></div>
         <div class="card-content">
             <div class="card-header">
+                <div class="card-title">{{ currentDate }}</div>
+                <div class="card-icon clock-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="card-value">{{ currentTime }}</div>
+            <div class="card-status status-{{ outside.color }}">
+                <span class="status-indicator"></span>
+                <span class="status-text">Draußen {{ outside.value }}</span>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="card">
+        <div class="card-gradient temp-gradient"></div>
+        <div class="card-content">
+            <div class="card-header">
                 <div class="card-title">Temperatur</div>
                 <div class="card-icon temp-icon">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -106,6 +126,8 @@
             </div>
         </div>
     </div>
+
+
 
     {% if fullscreen is defined and fullscreen == "false" %}
     <button

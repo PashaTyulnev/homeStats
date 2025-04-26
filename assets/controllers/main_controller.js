@@ -5,12 +5,14 @@ export default class extends Controller {
 
     connect() {
         // Aktualisiere die aktuellen Werte alle 5 Sekunden
-        setInterval(() => {
-            this.loadCurrentValue();
-        }, 5000);
+        // setInterval(() => {
+        //     this.loadCurrentValue();
+        // }, 5000);
 
         //remove fullscreen session variable
         sessionStorage.removeItem("fullscreen");
+        // Höre auf Doppelklicks auf das gesamte Controller-Element
+        this.element.addEventListener('dblclick', this.toggleFullscreen.bind(this));
     }
 
     loadCurrentValue() {
@@ -33,25 +35,30 @@ export default class extends Controller {
     toggleFullscreen() {
         const element = this.element;
 
-        //hide this element
-        document.getElementById("fullscreen-button").style.display= "none";
-
-        //save to session that display is in fullscreen
-        sessionStorage.setItem("fullscreen", "true");
-
         if (!document.fullscreenElement) {
+            // Vollbild aktivieren
             element.requestFullscreen().then(() => {
-
+                sessionStorage.setItem("fullscreen", "true");
+                const button = document.getElementById("fullscreen-button");
+                if (button) {
+                    button.style.display = "none";
+                }
             }).catch(err => {
                 console.error(`Fehler beim Aktivieren des Vollbildmodus: ${err.message}`);
             });
         } else {
+            // Vollbild beenden
             document.exitFullscreen().then(() => {
-
+                sessionStorage.setItem("fullscreen", "false");
+                const button = document.getElementById("fullscreen-button");
+                if (button) {
+                    button.style.display = "block";
+                }
             }).catch(err => {
                 console.error(`Fehler beim Beenden des Vollbildmodus: ${err.message}`);
             });
         }
     }
+
 
 }

@@ -60,7 +60,6 @@ header {
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 20px;
 }
 
 
@@ -181,6 +180,13 @@ header {
     background: linear-gradient(135deg, #ff9f0a, #ff3b30);
     box-shadow: 0 5px 15px rgba(255, 159, 10, 0.3);
 }
+
+.clock-icon {
+    background: linear-gradient(135deg, #ffd60a, #ff9f0a);
+    box-shadow: 0 5px 15px rgba(255, 214, 10, 0.3);
+}
+
+
 
 .humidity-icon {
     background: linear-gradient(135deg, #0a84ff, #5ac8fa);
@@ -659,7 +665,6 @@ header {
     display: grid;
     grid-template-columns: repeat(1, 1fr);
     gap: 14px;
-    padding: 0 8px; /* Weniger Außenabstand */
 }
 
 /* Querformat Smartphones */
