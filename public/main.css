@@ -162,6 +162,11 @@ h1 {
     color: var(--warning);
 }
 
+.co2-icon {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--secondary);
+}
+
 .stat-value {
     font-size: 2.25rem;
     font-weight: 700;
@@ -200,6 +205,10 @@ h1 {
 
 .dust-progress {
     background-color: var(--warning);
+}
+
+.co2-progress {
+    background-color: var(--secondary);
 }
 
 .range-min, .range-max {
@@ -260,82 +269,19 @@ h1 {
     color: var(--text-light);
 }
 
-@media (max-width: 768px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-
-    h1 {
-        font-size: 1.5rem;
-    }
-
-    .chart-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.75rem;
-    }
-
-    .time-controls {
-        width: 100%;
-        justify-content: space-between;
-    }
-
-    .header-content {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-
-    .theme-toggle {
-        align-self: flex-end;
-        margin-top: -3rem;
-    }
+#fullscreen-button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
-/* Add this with your other stat-icon styles */
-.co2-icon {
-    background-color: rgba(16, 185, 129, 0.1);
-    color: var(--secondary);
-}
-
-/* Add this with other range-progress styles */
-.co2-progress {
-    background-color: var(--secondary);
-}
-
-/* Original CSS remains unchanged */
-
-/* Modify the media query section to accommodate Galaxy S9+ in landscape */
-@media (max-width: 768px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-
-    h1 {
-        font-size: 1.5rem;
-    }
-
-    .chart-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.75rem;
-    }
-
-    .time-controls {
-        width: 100%;
-        justify-content: space-between;
-    }
-
-    .header-content {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-
-    .theme-toggle {
-        align-self: flex-end;
-        margin-top: -3rem;
-    }
+#fullscreen-button:hover {
+    background-color: #0056b3;
 }
 
 /* Add a specific media query for Galaxy S9+ in landscape orientation */
@@ -387,17 +333,349 @@ h1 {
     }
 }
 
-#fullscreen-button {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
+/* Mobile-specific Styles */
+.mobile-dashboard {
+    display: none;
 }
 
-#fullscreen-button:hover {
-    background-color: #0056b3;
+/* Original dashboard styles for the cards */
+.dashboard .card {
+    background-color: var(--card);
+    border-radius: 0.75rem;
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 6px var(--shadow);
+    transition: transform 0.2s ease, background-color 0.3s ease;
+}
+
+.dashboard .card:hover {
+    transform: translateY(-2px);
+}
+
+.dashboard .card-gradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 6px;
+    width: 100%;
+}
+
+.dashboard .overall-gradient {
+    background: linear-gradient(to right, var(--primary), var(--primary-dark));
+}
+
+.dashboard .temp-gradient {
+    background: linear-gradient(to right, var(--danger), #FF7676);
+}
+
+.dashboard .humidity-gradient {
+    background: linear-gradient(to right, var(--primary), #8B8FFF);
+}
+
+.dashboard .co2-gradient {
+    background: linear-gradient(to right, var(--secondary), #4AE3B5);
+}
+
+.dashboard .dust-gradient {
+    background: linear-gradient(to right, var(--warning), #FFCE6A);
+}
+
+.dashboard .card-content {
+    padding: 1.5rem;
+}
+
+.dashboard .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.dashboard .card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+.dashboard .card-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.375rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dashboard .overall-icon {
+    background-color: rgba(99, 102, 241, 0.1);
+    color: var(--primary);
+}
+
+.dashboard .temp-icon {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+}
+
+.dashboard .humidity-icon {
+    background-color: rgba(99, 102, 241, 0.1);
+    color: var(--primary);
+}
+
+.dashboard .co2-icon {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--secondary);
+}
+
+.dashboard .dust-icon {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+}
+
+.dashboard .card-value-container {
+    display: flex;
+    align-items: baseline;
+}
+
+.dashboard .card-value {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.dashboard .card-max-value {
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--text-light);
+    margin-left: 0.375rem;
+}
+
+.dashboard .score-bar-container {
+    height: 0.5rem;
+    background-color: var(--range-bg);
+    border-radius: 9999px;
+    margin: 0.75rem 0;
+    overflow: hidden;
+}
+
+.dashboard .score-bar {
+    height: 100%;
+    border-radius: 9999px;
+    background-color: var(--primary);
+}
+
+.dashboard .card-status {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.dashboard .status-indicator {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+
+.dashboard .status-text {
+    color: var(--text-light);
+}
+
+.dashboard .status-green .status-indicator {
+    background-color: #10B981;
+}
+
+.dashboard .status-yellow .status-indicator {
+    background-color: #F59E0B;
+}
+
+.dashboard .status-red .status-indicator {
+    background-color: #EF4444;
+}
+
+.mobile-dashboard{
+    display: none;
+}
+
+/* Mobile Dashboard Specific Styles */
+@media screen and (max-width: 768px) {
+    /* Show mobile dashboard, hide regular dashboard */
+    .dashboard {
+        display: none;
+    }
+
+    .mobile-dashboard {
+        display: block;
+        width: 100%;
+    }
+
+    .mobile-card {
+        background-color: var(--card);
+        border-radius: 0.75rem;
+        margin-bottom: 1rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 6px var(--shadow);
+        transition: transform 0.2s ease, background-color 0.3s ease;
+    }
+
+    .mobile-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .mobile-card-gradient {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 4px;
+        width: 100%;
+    }
+
+    .mobile-card-content {
+        padding: 1rem;
+    }
+
+    .mobile-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .mobile-card-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-light);
+    }
+
+    .mobile-card-icon {
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 0.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .mobile-card-value-container {
+        display: flex;
+        align-items: baseline;
+    }
+
+    .mobile-card-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+
+    .mobile-card-max-value {
+        font-size: 0.875rem;
+        font-weight: 400;
+        color: var(--text-light);
+        margin-left: 0.25rem;
+    }
+
+    .mobile-score-bar-container {
+        height: 0.375rem;
+        background-color: var(--range-bg);
+        border-radius: 9999px;
+        margin: 0.5rem 0;
+        overflow: hidden;
+    }
+
+    .mobile-score-bar {
+        height: 100%;
+        border-radius: 9999px;
+        background-color: var(--primary);
+    }
+
+    .mobile-card-status {
+        display: flex;
+        align-items: center;
+        font-size: 0.75rem;
+    }
+
+    .mobile-status-indicator {
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 50%;
+        margin-right: 0.375rem;
+    }
+
+    .mobile-status-text {
+        color: var(--text-light);
+    }
+
+    /* Gradient colors */
+    .mobile-overall-gradient {
+        background: linear-gradient(to right, var(--primary), var(--primary-dark));
+    }
+
+    .mobile-temp-gradient {
+        background: linear-gradient(to right, var(--danger), #FF7676);
+    }
+
+    .mobile-humidity-gradient {
+        background: linear-gradient(to right, var(--primary), #8B8FFF);
+    }
+
+    .mobile-co2-gradient {
+        background: linear-gradient(to right, var(--secondary), #4AE3B5);
+    }
+
+    .mobile-dust-gradient {
+        background: linear-gradient(to right, var(--warning), #FFCE6A);
+    }
+
+    /* Icon colors */
+    .mobile-overall-icon {
+        background-color: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
+    }
+
+    .mobile-temp-icon {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+    }
+
+    .mobile-humidity-icon {
+        background-color: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
+    }
+
+    .mobile-co2-icon {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: var(--secondary);
+    }
+
+    .mobile-dust-icon {
+        background-color: rgba(245, 158, 11, 0.1);
+        color: var(--warning);
+    }
+
+    /* Status colors */
+    .mobile-status-green .mobile-status-indicator {
+        background-color: #10B981;
+    }
+
+    .mobile-status-yellow .mobile-status-indicator {
+        background-color: #F59E0B;
+    }
+
+    .mobile-status-red .mobile-status-indicator {
+        background-color: #EF4444;
+    }
+
+    /* Compact mobile design for smaller screens */
+    @media screen and (max-width: 360px) {
+        .mobile-card-content {
+            padding: 0.75rem;
+        }
+
+        .mobile-card-value {
+            font-size: 1.25rem;
+        }
+
+        .mobile-card-title {
+            font-size: 0.75rem;
+        }
+    }
 }

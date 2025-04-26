@@ -259,4 +259,29 @@ class HomeService
 
         return $result;
     }
+
+    public function formatLatestDataForDisplay($latestData): array
+    {
+
+        $formattedData = [];
+
+        $temperature = $latestData->getTemperature();
+        $humidity = $latestData->getHumidity();
+        $dustValue = $latestData->getDustValue();
+        $co2Value = $latestData->getco2Value();
+
+        $formattedData['temperature'] = DataFrontendFormatter::formatTemperatureData($temperature);
+        $formattedData['humidity'] = DataFrontendFormatter::formatHumidityData($humidity);
+        $formattedData['dustValue'] = DataFrontendFormatter::formatDustData($dustValue);
+        $formattedData['co2Value'] = DataFrontendFormatter::formatCO2Data($co2Value);
+        $formattedData['total'] = DataFrontendFormatter::formatEnvironmentStatus(
+            $temperature,
+            $humidity,
+            $co2Value,
+            $dustValue
+        );
+
+
+        return $formattedData;
+    }
 }

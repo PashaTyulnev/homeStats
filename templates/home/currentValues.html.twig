@@ -1,0 +1,113 @@
+
+<div class="dashboard">
+    <div class="card">
+        <div class="card-gradient overall-gradient"></div>
+        <div class="card-content">
+            <div class="card-header">
+                <div class="card-title">Gesamtbewertung</div>
+                <div class="card-icon overall-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"></path>
+                        <path d="M12 8v8"></path>
+                        <path d="M8 12h8"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-value-container">
+                <div class="card-value">{{ total.score }}</div>
+                <div class="card-max-value">/8</div>
+            </div>
+            <div class="card-status status-{{ total.color }}">
+                <span class="status-indicator"></span>
+                <span class="status-text">{{ total.description }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-gradient temp-gradient"></div>
+        <div class="card-content">
+            <div class="card-header">
+                <div class="card-title">Temperatur</div>
+                <div class="card-icon temp-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-value">{{ temperature.value }}</div>
+            <div class="card-status status-{{ temperature.color }}">
+                <span class="status-indicator"></span>
+                <span class="status-text">{{ temperature.description }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-gradient humidity-gradient"></div>
+        <div class="card-content">
+            <div class="card-header">
+                <div class="card-title">Luftfeuchtigkeit</div>
+                <div class="card-icon humidity-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-value">{{ humidity.value }}</div>
+            <div class="card-status status-{{ humidity.color }}">
+                <span class="status-indicator"></span>
+                <span class="status-text">{{ humidity.description }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-gradient co2-gradient"></div>
+        <div class="card-content">
+            <div class="card-header">
+                <div class="card-title">CO₂-Gehalt</div>
+                <div class="card-icon co2-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 12h4"></path>
+                        <path d="M9 12a7 7 0 0 0 14 0 7 7 0 0 0-14 0z"></path>
+                        <path d="M9 12a3 3 0 0 1 6 0v2a3 3 0 0 1-6 0z"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-value">{{ co2Value.value }}</div>
+            <div class="card-status status-{{ co2Value.color }}">
+                <span class="status-indicator"></span>
+                <span class="status-text">{{ co2Value.description }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-gradient dust-gradient"></div>
+        <div class="card-content">
+            <div class="card-header">
+                <div class="card-title">Feinstaub (PM2.5)</div>
+                <div class="card-icon dust-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M8.56 3.69a9 9 0 0 0-2.92 1.95"></path>
+                        <path d="M3.69 8.56a9 9 0 0 0-1.95 2.92"></path>
+                        <path d="M3.69 15.44a9 9 0 0 0 1.95 2.92"></path>
+                        <path d="M8.56 20.31a9 9 0 0 0 2.92 1.95"></path>
+                        <path d="M15.44 20.31a9 9 0 0 0 2.92-1.95"></path>
+                        <path d="M20.31 15.44a9 9 0 0 0 1.95-2.92"></path>
+                        <path d="M20.31 8.56a9 9 0 0 0-1.95-2.92"></path>
+                        <path d="M15.44 3.69a9 9 0 0 0-2.92-1.95"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-value">{{ dustValue.value }}</div>
+            <div class="card-status status-{{ dustValue.color }}">
+                <span class="status-indicator"></span>
+                <span class="status-text">{{ dustValue.description }}</span>
+            </div>
+        </div>
+    </div>
+
+</div>

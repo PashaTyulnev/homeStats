@@ -22,12 +22,20 @@ class HomeController extends AbstractController
         $this->twig = $twig;
     }
 
-    #[Route('/', name: 'home')]
+    #[Route('/', name: 'main')]
     public function list(): \Symfony\Component\HttpFoundation\Response
     {
         $lastLog = $this->homeService->getLatestData();
+        $formattedData = $this->homeService->formatLatestDataForDisplay($lastLog);
+        return $this->render('home/main.html.twig', $formattedData);
+    }
 
-        return $this->render('logValues.html.twig', ['lastLog' => $lastLog]);
+    #[Route('/getCurrentValuesTemplate', name: 'getCurrentValuesTemplate')]
+    public function getCurrentValuesTemplate(): \Symfony\Component\HttpFoundation\Response
+    {
+        $lastLog = $this->homeService->getLatestData();
+        $formattedData = $this->homeService->formatLatestDataForDisplay($lastLog);
+        return $this->render('home/currentValues.html.twig', $formattedData);
     }
 
     #[Route('/stats', name: 'stats')]
