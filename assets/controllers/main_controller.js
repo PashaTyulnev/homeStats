@@ -4,9 +4,9 @@ export default class extends Controller {
 
     static targets = [ 'currentDataContainer' ];
     connect() {
-        setInterval(() => {
-            this.loadCurrentValue();
-        },5000);
+        // setInterval(() => {
+        //     this.loadCurrentValue();
+        // },5000);
     }
 
     loadCurrentValue() {

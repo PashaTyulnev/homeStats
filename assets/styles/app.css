@@ -26,11 +26,12 @@
     -webkit-font-smoothing: antialiased;
 }
 
+
 body {
     background-color: var(--home-bg);
     color: var(--home-text);
     min-height: 100vh;
-    padding: 24px;
+    padding: 10px;
 }
 
 header {
@@ -61,6 +62,13 @@ header {
     margin: 0 auto;
 }
 
+.currentStatsContainer{
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .section-title {
     font-size: 20px;
     font-weight: 600;
@@ -85,7 +93,6 @@ header {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 24px;
-    margin-bottom: 40px;
 }
 
 .card {
@@ -666,14 +673,14 @@ header {
     }
 
     .card {
-        padding: 10px;
+        padding: 25px;
     }
 
     .card-header {
         margin-bottom: 0;    }
 
     .card-title {
-        font-size: 11px;
+        font-size: 12px;
     }
 
     .card-value {
