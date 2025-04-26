@@ -6,7 +6,7 @@ export default class extends Controller {
     connect() {
         setInterval(() => {
             this.loadCurrentValue();
-        },10000);
+        },5000);
     }
 
     loadCurrentValue() {

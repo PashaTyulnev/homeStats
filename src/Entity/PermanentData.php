@@ -21,12 +21,6 @@ class PermanentData
     private ?float $humidity = null;
 
     #[ORM\Column(nullable: true)]
-    private ?float $dustValue = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?float $dustVoltage = null;
-
-    #[ORM\Column(nullable: true)]
     private ?float $dustDensity = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
@@ -67,29 +61,7 @@ class PermanentData
         return $this;
     }
 
-    public function getDustValue(): ?float
-    {
-        return $this->dustValue;
-    }
 
-    public function setDustValue(?float $dustValue): static
-    {
-        $this->dustValue = $dustValue;
-
-        return $this;
-    }
-
-    public function getDustVoltage(): ?float
-    {
-        return $this->dustVoltage;
-    }
-
-    public function setDustVoltage(?float $dustVoltage): static
-    {
-        $this->dustVoltage = $dustVoltage;
-
-        return $this;
-    }
 
     public function getDustDensity(): ?float
     {

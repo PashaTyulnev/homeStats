@@ -12,130 +12,103 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class HomeService
 {
-    private EntityManagerInterface $entityManager;
-    private HomelogRepository $homelogRepository;
-    private PermanentDataRepository $permanentDataRepository;
-    private const DUST_DENSITY_MOVING_AVERAGE_WINDOW = 50; // Fenstergröße für gleitenden Durchschnitt
+    private const DUST_DENSITY_MOVING_AVERAGE_WINDOW = 50;
     private const BERLIN_TIMEZONE = 'Europe/Berlin';
 
-    public function __construct(EntityManagerInterface $entityManager, HomelogRepository $homelogRepository, PermanentDataRepository $permanentDataRepository)
+    public function __construct(
+        private EntityManagerInterface $entityManager,
+        private HomelogRepository $homelogRepository,
+        private PermanentDataRepository $permanentDataRepository
+    ) {}
+
+    public function logData(array $requestData): void
     {
-        $this->entityManager = $entityManager;
-        $this->homelogRepository = $homelogRepository;
-        $this->permanentDataRepository = $permanentDataRepository;
-    }
+        $humidity = $requestData['humidity'] ?? 0;
+        $temperature = $requestData['temperature'] ?? 0;
+        $dustDensity = $requestData['dustDensity'] ?? 0;
 
-    public function logData($requestData)
-    {
-        $humidity = $requestData['humidity'];
-        $temperature = $requestData['temperature'];
-        $dustValue = $requestData['dustValue'];
-        $dustVoltage = $requestData['dustVoltage'];
-        $dustDensity = $requestData['dustDensity'];
-        $co2Value = $requestData['co2'];
-        $co2temp = $requestData['co2temp'];
+        $co2Value = $this->sanitizeCo2Value($requestData['co2'] ?? 0);
+        $co2Temp = $requestData['co2temp'] ?? 0;
 
-
-        //wenn co2Value 0 ist, dann hole den letzten co2Value der nicht null ist und benutze ihn
-        if ($co2Value == 0) {
-            $qb = $this->homelogRepository->createQueryBuilder('h')
-                ->where('h.co2Value != 0')
-                ->orderBy('h.datetime', 'DESC')
-                ->setMaxResults(1);
-
-            $lastLog = $qb->getQuery()->getOneOrNullResult();
-
-            if ($lastLog) {
-                $co2Value = $lastLog->getCo2Value();
-            }
+        if ($temperature === 0 || $humidity === 0) {
+            return;
         }
 
         $date = new DateTime();
 
-        if ($temperature == 0 || $humidity == 0) {
-            return;
-        }
-
-        $this->saveHomeLog($humidity, $temperature, $date, $dustValue, $dustVoltage, $dustDensity, $co2Value, $co2temp);
-        $this->cleanupOldHomeLogs();
-        $this->savePermanentData($humidity, $temperature, $date, $dustValue, $dustVoltage, $dustDensity, $co2Value, $co2temp);
-        $this->cleanupOldPermanentData();
+        $this->saveHomeLog($humidity, $temperature, $date, $dustDensity, $co2Value, $co2Temp);
+        $this->cleanupOldData();
+        $this->savePermanentData($humidity, $temperature, $date, $dustDensity, $co2Value, $co2Temp);
     }
 
-    private function saveHomeLog($humidity, $temperature, $date, $dustValue, $dustVoltage, $dustDensity, $co2Value, $co2temp)
+    private function sanitizeCo2Value(int $co2Value): int
     {
-        $allLogs = $this->homelogRepository->findBy([], ['datetime' => 'DESC'], 1);
-        $lastLog = !empty($allLogs) ? $allLogs[0] : null;
-
-        // Nur speichern wenn letzter Log älter als 2 Sekunden
-        if (!$lastLog || ($date->getTimestamp() - $lastLog->getDatetime()->getTimestamp() > 2)) {
-            $homelog = new Homelog();
-            $homelog->setHumidity($humidity);
-            $homelog->setTemperature($temperature);
-            $homelog->setDatetime($date);
-            $homelog->setDustValue($dustValue);
-            $homelog->setDustVoltage($dustVoltage);
-            $homelog->setDustDensity($dustDensity);
-            $homelog->setco2Value($co2Value);
-            $homelog->setCo2temp($co2temp);
-
-
-            $this->entityManager->persist($homelog);
-            $this->entityManager->flush();
+        if ($co2Value !== 0) {
+            return $co2Value;
         }
-    }
 
-    private function cleanupOldHomeLogs()
-    {
-        $cutoffDate = new DateTime();
-        $cutoffDate->modify('-1 hour');
-
-        // Effizienteres Löschen über Query statt einzelne Entitäten
-        $this->homelogRepository->createQueryBuilder('h')
-            ->delete()
-            ->where('h.datetime < :cutoffDate')
-            ->setParameter('cutoffDate', $cutoffDate)
+        $lastLog = $this->homelogRepository->createQueryBuilder('h')
+            ->where('h.co2Value != 0')
+            ->orderBy('h.datetime', 'DESC')
+            ->setMaxResults(1)
             ->getQuery()
-            ->execute();
+            ->getOneOrNullResult();
+
+        return $lastLog?->getCo2Value() ?? 0;
     }
 
-    private function savePermanentData($humidity, $temperature, $date, $dustValue, $dustVoltage, $dustDensity, $co2Value, $co2temp)
+    private function saveHomeLog(float $humidity, float $temperature, DateTime $date, float $dustDensity, int $co2Value, float $co2Temp): void
     {
-        $allPermaLogs = $this->permanentDataRepository->findBy([], ['datetime' => 'DESC'], 1);
-        $lastPermaLog = !empty($allPermaLogs) ? $allPermaLogs[0] : null;
+        $lastLog = $this->homelogRepository->findOneBy([], ['datetime' => 'DESC']);
 
-        $now = new \DateTime();
-        $secondsSince = $lastPermaLog ? ($date->getTimestamp() - $lastPermaLog->getDatetime()->getTimestamp()) : null;
-        $secondsFromNow = $now->getTimestamp() - $date->getTimestamp();
+        if (!$lastLog || $this->isOlderThanSeconds($lastLog->getDatetime(), 2, $date)) {
+            $homelog = (new Homelog())
+                ->setHumidity($humidity)
+                ->setTemperature($temperature)
+                ->setDatetime($date)
+                ->setDustDensity($dustDensity)
+                ->setCo2Value($co2Value)
+                ->setCo2Temp($co2Temp);
 
-        $isLast24h = $secondsFromNow <= 86400; // 24 * 60 * 60 = 86400 Sekunden
-
-        if ($isLast24h || !$lastPermaLog || $secondsSince > 300) {
-            $permData = new PermanentData();
-            $permData->setHumidity($humidity);
-            $permData->setTemperature($temperature);
-            $permData->setDatetime($date);
-            $permData->setDustValue($dustValue);
-            $permData->setDustVoltage($dustVoltage);
-            $permData->setDustDensity($dustDensity);
-            $permData->setco2Value($co2Value);
-            $permData->setCo2temp($co2temp);
-
-            $this->entityManager->persist($permData);
-            $this->entityManager->flush();
+            $this->persistEntity($homelog);
         }
     }
 
-
-    private function cleanupOldPermanentData()
+    private function savePermanentData(float $humidity, float $temperature, DateTime $date, float $dustDensity, int $co2Value, float $co2Temp): void
     {
-        $cutoffDate = new DateTime();
-        $cutoffDate->modify('-1 week');
+        $lastPermaLog = $this->permanentDataRepository->findOneBy([], ['datetime' => 'DESC']);
 
-        // Effizienteres Löschen über Query
-        $this->permanentDataRepository->createQueryBuilder('p')
+        $now = new DateTime();
+        $shouldSave = !$lastPermaLog ||
+            $this->isOlderThanSeconds($lastPermaLog->getDatetime(), 300, $date) ||
+            $this->isWithinLastHours($date, 24, $now);
+
+        if ($shouldSave) {
+            $permData = (new PermanentData())
+                ->setHumidity($humidity)
+                ->setTemperature($temperature)
+                ->setDatetime($date)
+                ->setDustDensity($dustDensity)
+                ->setCo2Value($co2Value)
+                ->setCo2Temp($co2Temp);
+
+            $this->persistEntity($permData);
+        }
+    }
+
+    private function cleanupOldData(): void
+    {
+        $this->deleteOlderThan($this->homelogRepository, '-1 hour');
+        $this->deleteOlderThan($this->permanentDataRepository, '-1 week');
+    }
+
+    private function deleteOlderThan($repository, string $modifyString): void
+    {
+        $cutoffDate = (new DateTime())->modify($modifyString);
+
+        $repository->createQueryBuilder('e')
             ->delete()
-            ->where('p.datetime < :cutoffDate')
+            ->where('e.datetime < :cutoffDate')
             ->setParameter('cutoffDate', $cutoffDate)
             ->getQuery()
             ->execute();
@@ -143,37 +116,27 @@ class HomeService
 
     public function getLatestData(): ?Homelog
     {
-        $allLogs = $this->homelogRepository->findBy([], ['datetime' => 'DESC'], 30);
+        $logs = $this->homelogRepository->findBy([], ['datetime' => 'DESC'], 30);
 
-        if (empty($allLogs)) {
+        if (empty($logs)) {
             return null;
         }
 
-        $lastLog = $allLogs[0];
+        $lastLog = $logs[0];
 
-        // Wenn weniger als 30 Logs vorhanden sind, gib einfach den letzten zurück
-        if (count($allLogs) < 30) {
-            return $lastLog;
+        if (count($logs) >= 30) {
+            $average = (int)(array_sum(array_map(fn($log) => $log->getDustDensity(), $logs)) / count($logs));
+            $lastLog->setDustDensity($average);
         }
-
-        // Berechne den Durchschnitt der Staubdichte für die letzten 30 Logs
-        $dustDensitySum = 0;
-        foreach ($allLogs as $log) {
-            $dustDensitySum += $log->getDustDensity();
-        }
-
-        $avgDustDensity = (int)($dustDensitySum / count($allLogs));
-        $lastLog->setDustDensity($avgDustDensity);
 
         return $lastLog;
     }
 
-    public function getLastDaysData($requestData): array
+    public function getLastDaysData(array $requestData): array
     {
-        $fromLastDays = $requestData['lastDays'];
-        $cutoffDate = new DateTime('-' . $fromLastDays . ' days');
+        $days = (int)($requestData['lastDays'] ?? 0);
+        $cutoffDate = (new DateTime())->modify('-' . $days . ' days');
 
-        // Hole alle relevanten Logs mit einer optimierten Abfrage
         $logs = $this->permanentDataRepository->createQueryBuilder('p')
             ->where('p.datetime > :cutoffDate')
             ->setParameter('cutoffDate', $cutoffDate)
@@ -182,76 +145,52 @@ class HomeService
             ->getResult();
 
         if (empty($logs)) {
-            return [
-                'dustDensity' => [],
-                'temperature' => [],
-                'humidity' => [],
-                'dustValue' => [],
-                'labels' => []
-            ];
+            return $this->initializeEmptyDataArray();
         }
 
-        // Initialisiere Arrays für Rückgabedaten
-        $returnData = [
+        return $this->buildDataArrayFromLogs($logs);
+    }
+
+    private function buildDataArrayFromLogs(array $logs): array
+    {
+        $data = [
             'dustDensity' => [],
             'temperature' => [],
             'humidity' => [],
-            'dustValue' => [],
-            'co2Value' => [], // Add this line
-            'labels' => []
+            'co2Value' => [],
+            'labels' => [],
         ];
-        // Verarbeite Logs für Basisdaten
+
         foreach ($logs as $log) {
-            $returnData['dustDensity'][] = $log->getDustDensity();
-            $returnData['temperature'][] = $log->getTemperature();
-            $returnData['humidity'][] = $log->getHumidity();
-            $returnData['dustValue'][] = $log->getDustValue();
-            $returnData['co2Value'][] = $log->getco2Value(); // Add this line
+            $data['dustDensity'][] = $log->getDustDensity();
+            $data['temperature'][] = $log->getTemperature();
+            $data['humidity'][] = $log->getHumidity();
+            $data['co2Value'][] = $log->getCo2Value();
 
             $datetime = clone $log->getDatetime();
             $datetime->setTimezone(new DateTimeZone(self::BERLIN_TIMEZONE));
-            $returnData['labels'][] = $datetime->format('H:i:s');
+            $data['labels'][] = $datetime->format('H:i:s');
         }
 
-        // Berechne gleitenden Durchschnitt für Staubdichte (effiziente Implementierung)
-        $returnData['dustDensity'] = $this->calculateMovingAverage(
-            $returnData['dustDensity'],
-            self::DUST_DENSITY_MOVING_AVERAGE_WINDOW
-        );
+        $data['dustDensity'] = $this->calculateMovingAverage($data['dustDensity'], self::DUST_DENSITY_MOVING_AVERAGE_WINDOW);
+        $this->alignArrayLengths($data);
 
-        // Passe andere Arrays an die Länge des dust density Arrays an
-        // Make sure to update the array trimming code to include co2Value
-        $offset = count($returnData['temperature']) - count($returnData['dustDensity']);
-        if ($offset > 0) {
-            $returnData['temperature'] = array_slice($returnData['temperature'], $offset);
-            $returnData['humidity'] = array_slice($returnData['humidity'], $offset);
-            $returnData['dustValue'] = array_slice($returnData['dustValue'], $offset);
-            $returnData['co2Value'] = array_slice($returnData['co2Value'], $offset); // Add this line
-            $returnData['labels'] = array_slice($returnData['labels'], $offset);
-        }
-
-        return $returnData;
+        return $data;
     }
 
-    /**
-     * Berechnet einen gleitenden Durchschnitt mit gegebener Fenstergröße
-     */
     private function calculateMovingAverage(array $data, int $windowSize): array
     {
         $count = count($data);
+
         if ($count <= $windowSize) {
-            // Wenn weniger Daten als die Fenstergröße, berechne einen einfachen Durchschnitt
-            $avg = array_sum($data) / $count;
+            $avg = array_sum($data) / max($count, 1);
             return array_fill(0, $count, $avg);
         }
 
         $result = [];
         $sum = array_sum(array_slice($data, 0, $windowSize));
-
-        // Berechne den ersten Durchschnitt
         $result[] = $sum / $windowSize;
 
-        // Berechne nachfolgende Durchschnitte durch Entfernen des ältesten Wertes und Hinzufügen des neuen
         for ($i = $windowSize; $i < $count; $i++) {
             $sum = $sum - $data[$i - $windowSize] + $data[$i];
             $result[] = $sum / $windowSize;
@@ -260,28 +199,59 @@ class HomeService
         return $result;
     }
 
-    public function formatLatestDataForDisplay($latestData): array
+    public function formatLatestDataForDisplay(Homelog $latestData): array
     {
+        return [
+            'temperature' => DataFrontendFormatter::formatTemperatureData($latestData->getTemperature()),
+            'humidity' => DataFrontendFormatter::formatHumidityData($latestData->getHumidity()),
+            'co2Value' => DataFrontendFormatter::formatCO2Data($latestData->getCo2Value()),
+            'dustDensity' => DataFrontendFormatter::formatDustData($latestData->getDustDensity()),
+            'total' => DataFrontendFormatter::formatEnvironmentStatus(
+                $latestData->getTemperature(),
+                $latestData->getHumidity(),
+                $latestData->getCo2Value(),
+                $latestData->getDustDensity()
+            ),
+        ];
+    }
 
-        $formattedData = [];
-
-        $temperature = $latestData->getTemperature();
-        $humidity = $latestData->getHumidity();
-        $dustValue = $latestData->getDustValue();
-        $co2Value = $latestData->getco2Value();
-
-        $formattedData['temperature'] = DataFrontendFormatter::formatTemperatureData($temperature);
-        $formattedData['humidity'] = DataFrontendFormatter::formatHumidityData($humidity);
-        $formattedData['dustValue'] = DataFrontendFormatter::formatDustData($dustValue);
-        $formattedData['co2Value'] = DataFrontendFormatter::formatCO2Data($co2Value);
-        $formattedData['total'] = DataFrontendFormatter::formatEnvironmentStatus(
-            $temperature,
-            $humidity,
-            $co2Value,
-            $dustValue
-        );
+    private function isOlderThanSeconds(DateTime $date, int $seconds, ?DateTime $now = null): bool
+    {
+        $now ??= new DateTime();
+        return ($now->getTimestamp() - $date->getTimestamp()) > $seconds;
+    }
 
 
-        return $formattedData;
+    private function isWithinLastHours(DateTime $date, int $hours, ?DateTime $now = null): bool
+    {
+        $now ??= new DateTime();
+        return ($now->getTimestamp() - $date->getTimestamp()) <= ($hours * 3600);
+    }
+    private function persistEntity(object $entity): void
+    {
+        $this->entityManager->persist($entity);
+        $this->entityManager->flush();
+    }
+
+    private function initializeEmptyDataArray(): array
+    {
+        return [
+            'dustDensity' => [],
+            'temperature' => [],
+            'humidity' => [],
+            'co2Value' => [],
+            'labels' => [],
+        ];
+    }
+
+    private function alignArrayLengths(array &$data): void
+    {
+        $targetCount = count($data['dustDensity']);
+        foreach (['temperature', 'humidity', 'co2Value', 'labels'] as $key) {
+            $offset = count($data[$key]) - $targetCount;
+            if ($offset > 0) {
+                $data[$key] = array_slice($data[$key], $offset);
+            }
+        }
     }
 }
