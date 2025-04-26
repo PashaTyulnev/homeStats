@@ -31,10 +31,13 @@ class HomeController extends AbstractController
     }
 
     #[Route('/getCurrentValuesTemplate', name: 'getCurrentValuesTemplate')]
-    public function getCurrentValuesTemplate(): \Symfony\Component\HttpFoundation\Response
+    public function getCurrentValuesTemplate(\Symfony\Component\HttpFoundation\Request $request): \Symfony\Component\HttpFoundation\Response
     {
+        $fullscreen = $request->query->get('fullscreen', false);
+
         $lastLog = $this->homeService->getLatestData();
         $formattedData = $this->homeService->formatLatestDataForDisplay($lastLog);
+        $formattedData['fullscreen'] = $fullscreen;
         return $this->render('home/currentValues.html.twig', $formattedData);
     }
 

@@ -107,11 +107,13 @@
         </div>
     </div>
 
+    {% if fullscreen is defined and fullscreen == "false" %}
     <button
             id="fullscreen-button"
             class="fullscreen-button"
             data-action="click->main#toggleFullscreen">
         ⤢ Vollbild
     </button>
+    {% endif %}
 
 </div>
