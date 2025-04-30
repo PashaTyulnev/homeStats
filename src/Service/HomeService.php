@@ -118,7 +118,7 @@ class HomeService
 
     public function getLatestData(): ?Homelog
     {
-        $logs = $this->homelogRepository->findBy([], ['datetime' => 'DESC'], 30);
+        $logs = $this->homelogRepository->findBy([], ['datetime' => 'DESC'], 2);
 
         if (empty($logs)) {
             return null;
@@ -126,7 +126,7 @@ class HomeService
 
         $lastLog = $logs[0];
 
-        if (count($logs) >= 30) {
+        if (count($logs) >=2) {
             $average = (int)(array_sum(array_map(fn($log) => $log->getDustDensity(), $logs)) / count($logs));
             $lastLog->setDustDensity($average);
         }

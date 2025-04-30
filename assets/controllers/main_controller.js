@@ -5,9 +5,9 @@ export default class extends Controller {
 
     connect() {
         // Aktualisiere die aktuellen Werte alle 5 Sekunden
-        // setInterval(() => {
-        //     this.loadCurrentValue();
-        // }, 5000);
+        setInterval(() => {
+            this.loadCurrentValue();
+        }, 5000);
 
         //remove fullscreen session variable
         sessionStorage.removeItem("fullscreen");
