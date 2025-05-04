@@ -12,7 +12,6 @@ use Twig\Environment;
 
 class HomeController extends AbstractController
 {
-
     private HomeService $homeService;
     private Environment $twig;
 

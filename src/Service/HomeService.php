@@ -17,11 +17,13 @@ class HomeService
     private const BERLIN_TIMEZONE = 'Europe/Berlin';
 
     public function __construct(
-        private EntityManagerInterface $entityManager,
-        private HomelogRepository $homelogRepository,
+        private EntityManagerInterface  $entityManager,
+        private HomelogRepository       $homelogRepository,
         private PermanentDataRepository $permanentDataRepository,
-        readonly HttpClientInterface $httpClient
-    ) {}
+        readonly HttpClientInterface    $httpClient
+    )
+    {
+    }
 
     public function logData(array $requestData): void
     {
@@ -50,7 +52,7 @@ class HomeService
         }
 
         $lastLog = $this->homelogRepository->createQueryBuilder('h')
-            ->where('h.co2Value != 0')
+            ->where('h.co2value != 0')
             ->orderBy('h.datetime', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
@@ -61,29 +63,34 @@ class HomeService
 
     private function saveHomeLog(float $humidity, float $temperature, DateTime $date, float $dustDensity, int $co2Value, float $co2Temp): void
     {
-        $lastLog = $this->homelogRepository->findOneBy([], ['datetime' => 'DESC']);
+        $homelog = (new Homelog())
+            ->setHumidity($humidity)
+            ->setTemperature($temperature)
+            ->setDatetime($date)
+            ->setDustDensity($dustDensity)
+            ->setCo2Value($co2Value)
+            ->setCo2Temp($co2Temp);
 
-        if (!$lastLog || $this->isOlderThanSeconds($lastLog->getDatetime(), 2, $date)) {
-            $homelog = (new Homelog())
-                ->setHumidity($humidity)
-                ->setTemperature($temperature)
-                ->setDatetime($date)
-                ->setDustDensity($dustDensity)
-                ->setCo2Value($co2Value)
-                ->setCo2Temp($co2Temp);
+        $this->persistEntity($homelog);
 
-            $this->persistEntity($homelog);
-        }
+        //delete all older than 24H
+        // delete all older than 24H
+        $cutoffDate = (new DateTime())->modify('-24 hours');
+
+        $this->entityManager->createQueryBuilder()
+            ->delete(Homelog::class, 'h')
+            ->where('h.datetime < :cutoff')
+            ->setParameter('cutoff', $cutoffDate)
+            ->getQuery()
+            ->execute();
+
     }
 
     private function savePermanentData(float $humidity, float $temperature, DateTime $date, float $dustDensity, int $co2Value, float $co2Temp): void
     {
         $lastPermaLog = $this->permanentDataRepository->findOneBy([], ['datetime' => 'DESC']);
 
-        $now = new DateTime();
-        $shouldSave = !$lastPermaLog ||
-            $this->isOlderThanSeconds($lastPermaLog->getDatetime(), 300, $date) ||
-            $this->isWithinLastHours($date, 24, $now);
+        $shouldSave = $this->isOlderThanSeconds($lastPermaLog->getDatetime(), 300, $date);
 
         if ($shouldSave) {
             $permData = (new PermanentData())
@@ -126,7 +133,7 @@ class HomeService
 
         $lastLog = $logs[0];
 
-        if (count($logs) >=2) {
+        if (count($logs) >= 2) {
             $average = (int)(array_sum(array_map(fn($log) => $log->getDustDensity(), $logs)) / count($logs));
             $lastLog->setDustDensity($average);
         }
@@ -232,6 +239,7 @@ class HomeService
         $now ??= new DateTime();
         return ($now->getTimestamp() - $date->getTimestamp()) <= ($hours * 3600);
     }
+
     private function persistEntity(object $entity): void
     {
         $this->entityManager->persist($entity);

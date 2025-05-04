@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Homelog;
+use DateTime;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -21,6 +22,17 @@ class HomelogRepository extends ServiceEntityRepository
         parent::__construct($registry, Homelog::class);
     }
 
+    public function getDataOfLastDays($lastDays): array
+    {
+
+        $cutoffDate = (new DateTime())->modify('-' . $lastDays . ' days');
+        return $this->createQueryBuilder('h')
+            ->where('h.datetime > :cutoffDate')
+            ->setParameter('cutoffDate', $cutoffDate)
+            ->orderBy('h.datetime', 'ASC')
+            ->getQuery()
+            ->getArrayResult();
+    }
     //    /**
     //     * @return Homelog[] Returns an array of Homelog objects
     //     */

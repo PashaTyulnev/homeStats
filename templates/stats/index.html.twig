@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+{% block javascripts %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+    {{ parent() }}
+{% endblock %}
+{% block body %}
+
+    <div data-controller="history" class="bg-white p-4 rounded shadow">
+        <div class="time-range-selector">
+            <button class="time-range-button active" data-action="click->history#updateTimeRange" data-history-days-param="1">Last 24h</button>
+            <button class="time-range-button" data-action="click->history#updateTimeRange" data-history-days-param="3">Last 3 days</button>
+            <button class="time-range-button" data-action="click->history#updateTimeRange" data-history-days-param="7">Last week</button>
+            <button class="time-range-button" data-action="click->history#updateTimeRange" data-history-days-param="30">Last month</button>
+        </div>
+        <div class="chartsContainer">
+            <div class="chart-wrapper">
+                <h2>Temperature</h2>
+                <canvas id="temperatureChart"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <h2>Humidity</h2>
+                <canvas id="humidityChart"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <h2>Co2</h2>
+                <canvas id="co2Chart"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <h2>Dust</h2>
+                <canvas id="dustChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
