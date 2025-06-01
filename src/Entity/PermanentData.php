@@ -32,6 +32,9 @@ class PermanentData
     #[ORM\Column(nullable: true)]
     private ?float $co2temp = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?float $tempOutside = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -107,6 +110,18 @@ class PermanentData
     public function setCo2temp(?float $co2temp): static
     {
         $this->co2temp = $co2temp;
+
+        return $this;
+    }
+
+    public function getTempOutside(): ?float
+    {
+        return $this->tempOutside;
+    }
+
+    public function setTempOutside(?float $tempOutside): static
+    {
+        $this->tempOutside = $tempOutside;
 
         return $this;
     }

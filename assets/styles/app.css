@@ -8,7 +8,7 @@
     --home-yellow: #ffd60a;
     --home-red: #ff453a;
     --home-border-radius: 16px;
-    --home-orange: #ff9500;        /* typisches home-Orange */
+    --home-orange: rgba(140, 119, 16, 0.96);        /* typisches home-Orange */
     --home-lightgreen: #90ee90;    /* LightGreen */
     --home-lightblue: #add8e6;     /* LightBlue */
     --home-purple: #8e44ad;        /* schönes Purple */
@@ -256,6 +256,13 @@ header {
     background-color: var(--home-red);
     box-shadow: 0 0 10px rgba(255, 69, 58, 0.5);
 }
+
+
+.status-lightorange .status-indicator {
+    background-color: #FFD580; /* heller Orangeton */
+    box-shadow: 0 0 10px rgba(255, 181, 71, 0.6); /* passend leicht leuchtender Schein */
+}
+
 
 .status-orange .status-indicator {
     background-color: var(--home-orange);

@@ -69,7 +69,8 @@ class HomeService
             ->setDatetime($date)
             ->setDustDensity($dustDensity)
             ->setCo2Value($co2Value)
-            ->setCo2Temp($co2Temp);
+            ->setCo2Temp($co2Temp)
+            ->setTempOutside($this->getDresdenWeatherData());
 
         $this->persistEntity($homelog);
 
@@ -90,14 +91,23 @@ class HomeService
     {
         $lastPermaLog = $this->permanentDataRepository->findOneBy([], ['datetime' => 'DESC']);
 
-        $shouldSave = $this->isOlderThanSeconds($lastPermaLog->getDatetime(), 300, $date);
+        // Wenn noch keine permanenten Daten existieren, speichere die ersten Daten
+        if ($lastPermaLog === null) {
+            $shouldSave = true;
+        } else {
+            // Prüfe, ob die letzten Daten älter als 5 Minuten (300 Sekunden) sind
+            $shouldSave = $this->isOlderThanSeconds($lastPermaLog->getDatetime(), 300, $date);
+        }
 
         if ($shouldSave) {
+            // Berechne den Durchschnitt der Dust Density aus den letzten 300 Sekunden
+            $averageDustDensity = $this->getAverageDustDensityLast300Seconds($date);
+
             $permData = (new PermanentData())
                 ->setHumidity($humidity)
                 ->setTemperature($temperature)
                 ->setDatetime($date)
-                ->setDustDensity($dustDensity)
+                ->setDustDensity($averageDustDensity)
                 ->setCo2Value($co2Value)
                 ->setCo2Temp($co2Temp);
 
@@ -105,6 +115,28 @@ class HomeService
         }
     }
 
+    private function getAverageDustDensityLast300Seconds(DateTime $currentDate): float
+    {
+        $cutoffDate = (clone $currentDate)->modify('-300 seconds');
+
+        $logs = $this->homelogRepository->createQueryBuilder('h')
+            ->select('h.dustDensity')
+            ->where('h.datetime >= :cutoffDate')
+            ->andWhere('h.datetime <= :currentDate')
+            ->setParameter('cutoffDate', $cutoffDate)
+            ->setParameter('currentDate', $currentDate)
+            ->getQuery()
+            ->getResult();
+
+        if (empty($logs)) {
+            return 0.0;
+        }
+
+        $dustValues = array_column($logs, 'dustDensity');
+        return round(array_sum($dustValues) / count($dustValues), 2);
+    }
+
+// Verbesserte cleanupOldData Methode mit Null-Check
     private function cleanupOldData(): void
     {
         $this->deleteOlderThan($this->homelogRepository, '-1 hour');
@@ -115,8 +147,11 @@ class HomeService
     {
         $cutoffDate = (new DateTime())->modify($modifyString);
 
-        $repository->createQueryBuilder('e')
-            ->delete()
+        // Verwende den Entitätsnamen basierend auf dem Repository
+        $entityClass = $repository === $this->homelogRepository ? Homelog::class : PermanentData::class;
+
+        $this->entityManager->createQueryBuilder()
+            ->delete($entityClass, 'e')
             ->where('e.datetime < :cutoffDate')
             ->setParameter('cutoffDate', $cutoffDate)
             ->getQuery()

@@ -60,7 +60,7 @@ class HomeController extends AbstractController
     {
         $this->homeService->logData($request->query->all());
         return new JsonResponse($request->query->all());
-//        return $this->render('home.html.twig');
+
     }
 
     #[Route('/getLastData', name: 'getLastData')]
@@ -68,6 +68,5 @@ class HomeController extends AbstractController
     {
         $data  = $this->homeService->getLastDaysData($request->query->all());
         return new JsonResponse($data);
-//        return $this->render('home.html.twig');
     }
 }
