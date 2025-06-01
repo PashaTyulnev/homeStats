@@ -63,6 +63,10 @@ class HomeService
 
     private function saveHomeLog(float $humidity, float $temperature, DateTime $date, float $dustDensity, int $co2Value, float $co2Temp): void
     {
+
+        $averageDustDensity = $this->getAverageDustDensityLast300Seconds($date);
+
+
         $homelog = (new Homelog())
             ->setHumidity($humidity)
             ->setTemperature($temperature)
@@ -70,7 +74,8 @@ class HomeService
             ->setDustDensity($dustDensity)
             ->setCo2Value($co2Value)
             ->setCo2Temp($co2Temp)
-            ->setTempOutside($this->getDresdenWeatherData());
+            ->setTempOutside($this->getDresdenWeatherData())
+            ->setDustDensityAverage($averageDustDensity);
 
         $this->persistEntity($homelog);
 
@@ -109,7 +114,8 @@ class HomeService
                 ->setDatetime($date)
                 ->setDustDensity($averageDustDensity)
                 ->setCo2Value($co2Value)
-                ->setCo2Temp($co2Temp);
+                ->setCo2Temp($co2Temp)
+                ->setTempOutside($this->getDresdenWeatherData());
 
             $this->persistEntity($permData);
         }
@@ -173,6 +179,15 @@ class HomeService
             $lastLog->setDustDensity($average);
         }
 
+        //datetime difference
+        $now = new DateTime();
+        $lastLogDate = $lastLog->getDatetime();
+
+        //diff in mins
+        $diffInMinutes = ($now->getTimestamp() - $lastLogDate->getTimestamp()) / 60;
+
+        $lastLog->diffInMinutes = (int)$diffInMinutes;
+
         return $lastLog;
     }
 
@@ -219,6 +234,7 @@ class HomeService
         $data['dustDensity'] = $this->calculateMovingAverage($data['dustDensity'], self::DUST_DENSITY_MOVING_AVERAGE_WINDOW);
         $this->alignArrayLengths($data);
 
+
         return $data;
     }
 
@@ -259,6 +275,7 @@ class HomeService
             'outside' => DataFrontendFormatter::formatOutsideWeather($this->getDresdenWeatherData()),
             'currentTime' => (new DateTime())->setTimezone(new DateTimeZone(self::BERLIN_TIMEZONE))->format('H:i:s'),
             'currentDate' => (new DateTime())->setTimezone(new DateTimeZone(self::BERLIN_TIMEZONE))->format('d.m.Y'),
+            'diffInMinutes' => $latestData->diffInMinutes*-1 ?? 0,
         ];
     }
 
@@ -307,15 +324,19 @@ class HomeService
     {
         $url = 'https://api.open-meteo.com/v1/forecast?latitude=51.0509&longitude=13.7373&current_weather=true';
 
-        //nutze http client
         $response = $this->httpClient->request('GET', $url);
-
         $content = $response->getContent();
-
-        //json to array
         $data = json_decode($content, true);
 
-        return $data['current_weather']['temperature'] ?? 0;
+        $temperature = $data['current_weather']['temperature'] ?? null;
 
+        if ($temperature !== null) {
+            // Wert gefunden, speichern als letzten bekannten Wert
+            $_SESSION['last_dresden_temp'] = $temperature;
+            return $temperature;
+        }
+
+        // Kein Wert gefunden, letzten bekannten Wert zurückgeben, falls vorhanden
+        return $_SESSION['last_dresden_temp'] ?? 0;
     }
 }

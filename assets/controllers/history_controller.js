@@ -1,137 +1,184 @@
-// history_controller.js
-import {Controller} from '@hotwired/stimulus';
+import { Controller } from '@hotwired/stimulus';
 
 export default class extends Controller {
+
     connect() {
+        this.temperatureChartInstance = null;
 
-        sessionStorage.setItem('lastDays', 1)
-        // Initialisiere mit gespeichertem lastDays Wert oder Default-Wert 1
+        sessionStorage.setItem('lastDays', 1);
         this.initializeChart();
-
-        // Setze beim Laden der Seite den richtigen Button auf active
         this.updateActiveButton();
     }
 
     updateActiveButton() {
-        // Hole den lastDays Wert aus dem sessionStorage oder setze Default auf 1
         const lastDays = sessionStorage.getItem('lastDays') || 1;
-
-        // Entferne die active Klasse von allen Buttons
-        const allTimeRangeButtons = document.querySelectorAll('[data-action="history#updateTimeRange"]');
-        allTimeRangeButtons.forEach(button => {
-            button.classList.remove('active');
-        });
-
-        // Füge die active Klasse zum entsprechenden Button hinzu
-        const activeButton = document.querySelector(`[data-action="history#updateTimeRange"][data-history-days-param="${lastDays}"]`);
-        if (activeButton) {
-            activeButton.classList.add('active');
-        }
+        const allButtons = document.querySelectorAll('[data-action="history#updateTimeRange"]');
+        allButtons.forEach(button => button.classList.remove('active'));
+        const activeButton = document.querySelector(`[data-history-days-param="${lastDays}"]`);
+        if (activeButton) activeButton.classList.add('active');
     }
 
-    initializeChart() {
-        // Hole den lastDays Wert aus dem sessionStorage
-        // Mit Fallback auf 1, falls nicht gesetzt
-        let lastDays = sessionStorage.getItem('lastDays') || 1;
+    async initializeChart() {
+        let lastDays = parseInt(sessionStorage.getItem('lastDays') || 1);
 
-        // Parse zu Integer für API-Aufruf
-        lastDays = parseInt(lastDays);
+            const data = await this.getDatasets(lastDays);
 
-        this.getDatasets(lastDays).then((response) => {
-            let xAxisValues = response.xAxis;
-            let temperatureValues = response.temperature;
-            let humidityValues = response.humidity;
-            let co2Values = response.co2Value;
-            let dustValues = response.dustDensity;
+            this.buildTemperatureChart('temperatureChart', data.xAxis, data.temperature, data.tempOutside);
+            this.buildChart('humidityChart', data.xAxis, data.humidity, "#3498DB", "#85C1E9", 20, 80);
+            this.buildChart('co2Chart', data.xAxis, data.co2value, "#27AE60", "#7DCEA0", 400, 2000);
+            this.buildChart('dustChart', data.xAxis, data.dustDensityAverage, "#7F8C8D", "#D5DBDB", 0, 20);
+            this.updateStats('temp', data.temperature, '°C');
+            this.updateStats('humidity', data.humidity, '%');
+            this.updateStats('co2', data.co2value, ' ppm');
+            this.updateStats('dust', data.dustDensityAverage, ' μg/m³');
 
-            this.buildChart('temperatureChart', xAxisValues, temperatureValues, "#E74C3C", "#F1948A", 15, 40); // Rot
-            this.buildChart('humidityChart', xAxisValues, humidityValues, "#3498DB", "#85C1E9", 20, 80);     // Blau
-            this.buildChart('co2Chart', xAxisValues, co2Values, "#27AE60", "#7DCEA0", 400, 2000);               // Grün
-            this.buildChart('dustChart', xAxisValues, dustValues, "#7F8C8D", "#D5DBDB", 0, 20);             // Grau
-        }).catch(error => {
-            console.error('Fehler beim Laden der Daten:', error);
-        });
     }
 
-    buildChart(canvasId, xAxisValues, yAxisValues, color1, color2, min, max) {
-        // Prüfe, ob Canvas-Element existiert
-        const canvas = document.getElementById(canvasId);
-        if (!canvas) {
-            console.error(`Canvas mit ID ${canvasId} nicht gefunden`);
-            return;
+    buildTemperatureChart(id, labels, inside, outside) {
+        const canvas = document.getElementById(id);
+        if (!canvas) return;
+
+        // Bestehendes Chart-Objekt zerstören, falls vorhanden
+        if (this.temperatureChartInstance) {
+            this.temperatureChartInstance.destroy();
         }
 
+        const allValues = [...inside, ...outside];
+        const min = Math.floor(Math.min(...allValues)) - 1;
+        const max = Math.ceil(Math.max(...allValues)) + 1;
 
-
-        new Chart(canvasId, {
+        console.log(max)
+        console.log(min)
+        this.temperatureChartInstance = new Chart(canvas, {
             type: "line",
             data: {
-                labels: xAxisValues,
-                datasets: [{
-                    fill: false,
-                    lineTension: 0,
-                    backgroundColor: color1,
-                    borderColor: color2,
-                    data: yAxisValues
-                }]
+                labels,
+                datasets: [
+                    {
+                        label: "Innentemperatur",
+                        data: inside,
+                        borderColor: "#E74C3C",
+                        backgroundColor: "transparent",
+                        borderWidth: 2
+                    },
+                    {
+                        label: "Außentemperatur",
+                        data: outside,
+                        borderColor: "#3498DB",
+                        backgroundColor: "transparent",
+                        borderDash: [5, 5],
+                        borderWidth: 2
+                    }
+                ]
             },
             options: {
-                legend: {display: false},
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
                 scales: {
                     x: {
                         ticks: {
+                            autoSkip: true,
+                            maxTicksLimit: 10,
+                            callback: function(value) {
+                                const label = this.getLabelForValue(value);
+                                const date = new Date(label);
+                                return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                            },
                             font: {
-                                size: 6
+                                size: 10
                             }
                         }
                     },
                     y: {
-                        ticks: {
-                            min: min,
-                            max: max
-                        }
+                        min: min,
+                        max: max
                     }
                 }
             }
         });
     }
 
-    async get(url) {
-        try {
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`HTTP Fehler: ${response.status}`);
+
+    buildChart(id, labels, values, color1, color2) {
+        const canvas = document.getElementById(id);
+        if (!canvas) return;
+
+        // Dynamisches Min/Max mit Puffer berechnen
+        const min = Math.floor(Math.min(...values)) - 1;
+        const max = Math.ceil(Math.max(...values)) + 1;
+
+        new Chart(canvas, {
+
+            type: "line",
+            data: {
+                labels,
+                datasets: [{
+                    data: values,
+                    borderColor: color2,
+                    backgroundColor: color1,
+                    fill: false,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            autoSkip: true,
+                            maxTicksLimit: 10,
+                            callback: function(value) {
+                                const label = this.getLabelForValue(value);
+                                const date = new Date(label);
+                                return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                            },
+                            font: {
+                                size: 10
+                            }
+                        }
+                    },
+                    y: {
+                        min: min,
+                        max: max
+                    }
+                }
             }
-            return await response.json();
-        } catch (error) {
-            console.error('Fetch Error:', error);
-            throw error; // Fehler weiterleiten
-        }
+        });
     }
 
-    async getDatasets(lastDays = 1) {
-        return await this.get('/getLastChartDataByDays/' + lastDays);
+
+    updateStats(prefix, data, unit) {
+        const avg = (data.reduce((a, b) => a + b, 0) / data.length).toFixed(1);
+        const min = Math.min(...data).toFixed(1);
+        const max = Math.max(...data).toFixed(1);
+        document.getElementById(`${prefix}-avg`).textContent = avg + unit;
+        document.getElementById(`${prefix}-min`).textContent = min + unit;
+        document.getElementById(`${prefix}-max`).textContent = max + unit;
+    }
+
+    async getDatasets(lastDays) {
+        const response = await fetch(`/getLastChartDataByDays/${lastDays}`);
+        if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+        return await response.json();
     }
 
     updateTimeRange(event) {
-        let lastDays = event.params.days;
-
-        // Setze den lastDays Wert im sessionStorage
+        const lastDays = event.params.days;
         sessionStorage.setItem('lastDays', lastDays);
-
-       this.removeActiveClassFromButtons()
-
-        // Füge die active Klasse zum geklickten Button hinzu
+        this.removeActiveClassFromButtons();
         event.currentTarget.classList.add('active');
-
-        // Lade die Charts mit den aktualisierten Daten neu
         this.initializeChart();
     }
 
-
     removeActiveClassFromButtons() {
-        const buttons = document.querySelectorAll('.time-range-selector .time-range-button');
+        const buttons = document.querySelectorAll('.time-range-button');
         buttons.forEach(button => button.classList.remove('active'));
     }
-
 }

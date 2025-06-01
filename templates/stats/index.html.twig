@@ -1,35 +1,430 @@
 {% extends 'base.html.twig' %}
 {% block javascripts %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     {{ parent() }}
 {% endblock %}
+
+
 {% block body %}
 
-    <div data-controller="history" class="bg-white p-4 rounded shadow">
-        <div class="time-range-selector">
-            <button class="time-range-button active" data-action="click->history#updateTimeRange" data-history-days-param="1">Last 24h</button>
-            <button class="time-range-button" data-action="click->history#updateTimeRange" data-history-days-param="3">Last 3 days</button>
-            <button class="time-range-button" data-action="click->history#updateTimeRange" data-history-days-param="7">Last week</button>
-            <button class="time-range-button" data-action="click->history#updateTimeRange" data-history-days-param="30">Last month</button>
-        </div>
-        <div class="chartsContainer">
-            <div class="chart-wrapper">
-                <h2>Temperature</h2>
+    <style>
+        :root {
+            --home-bg: #000000;
+            --home-card: #1c1c1e;
+            --home-text: #ffffff;
+            --home-subtext: rgba(255, 255, 255, 0.7);
+            --home-blue: #0a84ff;
+            --home-green: #30d158;
+            --home-yellow: #ffd60a;
+            --home-red: #ff453a;
+            --home-border-radius: 16px;
+            --home-orange: rgba(140, 119, 16, 0.96);
+            --home-lightgreen: #90ee90;
+            --home-lightblue: #add8e6;
+            --home-purple: #8e44ad;
+            --home-teal: #30b0c7;
+            --home-grey: #d1d1d6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--home-bg);
+            color: var(--home-text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .dashboard-title {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--home-blue), var(--home-green), var(--home-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+        }
+
+        .dashboard-subtitle {
+            font-size: 16px;
+            color: var(--home-subtext);
+            font-weight: 400;
+        }
+
+        .time-range-selector {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .time-range-button {
+            padding: 12px 24px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            color: var(--home-subtext);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .time-range-button:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .time-range-button.active {
+            background: linear-gradient(135deg, var(--home-blue), var(--home-teal));
+            color: var(--home-text);
+            border-color: transparent;
+            box-shadow: 0 8px 25px rgba(10, 132, 255, 0.4);
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .chart-card {
+            background-color: var(--home-card);
+            border-radius: var(--home-border-radius);
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .chart-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .chart-gradient {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.1;
+            border-radius: var(--home-border-radius);
+            transition: opacity 0.3s ease;
+        }
+
+        .chart-card:hover .chart-gradient {
+            opacity: 0.15;
+        }
+
+        .temp-gradient {
+            background: radial-gradient(circle at top right, var(--home-orange), transparent 70%);
+        }
+
+        .humidity-gradient {
+            background: radial-gradient(circle at top right, var(--home-blue), transparent 70%);
+        }
+
+        .co2-gradient {
+            background: radial-gradient(circle at top right, var(--home-green), transparent 70%);
+        }
+
+        .dust-gradient {
+            background: radial-gradient(circle at top right, var(--home-purple), transparent 70%);
+        }
+
+        .chart-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .chart-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 18px;
+        }
+
+        .temp-icon {
+            background: linear-gradient(135deg, #ff9f0a, #ff3b30);
+            box-shadow: 0 8px 20px rgba(255, 159, 10, 0.4);
+        }
+
+        .humidity-icon {
+            background: linear-gradient(135deg, #0a84ff, #5ac8fa);
+            box-shadow: 0 8px 20px rgba(10, 132, 255, 0.4);
+        }
+
+        .co2-icon {
+            background: linear-gradient(135deg, #30d158, #34c759);
+            box-shadow: 0 8px 20px rgba(48, 209, 88, 0.4);
+        }
+
+        .dust-icon {
+            background: linear-gradient(135deg, #bf5af2, #5e5ce6);
+            box-shadow: 0 8px 20px rgba(191, 90, 242, 0.4);
+        }
+
+        .chart-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--home-text);
+            letter-spacing: -0.5px;
+        }
+
+        .chart-canvas-container {
+            position: relative;
+            height: 300px;
+            z-index: 2;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        @media (max-width: 1200px) {
+            .charts-container {
+                grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+                gap: 25px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .chart-card {
+                padding: 20px;
+            }
+
+            .chart-canvas-container {
+                height: 250px;
+            }
+
+            .time-range-button {
+                padding: 10px 20px;
+                font-size: 13px;
+            }
+
+            .dashboard-title {
+                font-size: 28px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 15px;
+            }
+
+            .chart-canvas-container {
+                height: 200px;
+            }
+
+            .time-range-button {
+                padding: 8px 16px;
+                font-size: 12px;
+            }
+        }
+
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid var(--home-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .chart-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--home-text);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--home-subtext);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+<div data-controller="history">
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">Sensor History</h1>
+        <p class="dashboard-subtitle">Detaillierte Verlaufsdaten der letzten Messungen</p>
+    </div>
+
+    <div class="time-range-selector">
+        <button class="time-range-button" data-action="history#updateTimeRange" data-history-days-param="1">Last 24h
+        </button>
+        <button class="time-range-button" data-action="history#updateTimeRange" data-history-days-param="3">Last 3
+            days
+        </button>
+        <button class="time-range-button" data-action="history#updateTimeRange" data-history-days-param="7">Last week
+        </button>
+        <button class="time-range-button" data-action="history#updateTimeRange" data-history-days-param="30">Last
+            month
+        </button>
+    </div>
+
+
+    <div class="charts-container">
+        <div class="chart-card">
+            <div class="chart-gradient temp-gradient"></div>
+            <div class="chart-header">
+                <div class="chart-icon temp-icon">🌡️</div>
+                <h2 class="chart-title">Temperature</h2>
+            </div>
+            <div class="chart-canvas-container">
                 <canvas id="temperatureChart"></canvas>
             </div>
-            <div class="chart-wrapper">
-                <h2>Humidity</h2>
+            <div class="chart-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="temp-avg">--</div>
+                    <div class="stat-label">Average</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="temp-min">--</div>
+                    <div class="stat-label">Minimum</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="temp-max">--</div>
+                    <div class="stat-label">Maximum</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-gradient humidity-gradient"></div>
+            <div class="chart-header">
+                <div class="chart-icon humidity-icon">💧</div>
+                <h2 class="chart-title">Humidity</h2>
+            </div>
+            <div class="chart-canvas-container">
                 <canvas id="humidityChart"></canvas>
             </div>
-            <div class="chart-wrapper">
-                <h2>Co2</h2>
+            <div class="chart-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="humidity-avg">--</div>
+                    <div class="stat-label">Average</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="humidity-min">--</div>
+                    <div class="stat-label">Minimum</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="humidity-max">--</div>
+                    <div class="stat-label">Maximum</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-gradient co2-gradient"></div>
+            <div class="chart-header">
+                <div class="chart-icon co2-icon">🌱</div>
+                <h2 class="chart-title">CO₂</h2>
+            </div>
+            <div class="chart-canvas-container">
                 <canvas id="co2Chart"></canvas>
             </div>
-            <div class="chart-wrapper">
-                <h2>Dust</h2>
+            <div class="chart-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="co2-avg">--</div>
+                    <div class="stat-label">Average</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="co2-min">--</div>
+                    <div class="stat-label">Minimum</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="co2-max">--</div>
+                    <div class="stat-label">Maximum</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-gradient dust-gradient"></div>
+            <div class="chart-header">
+                <div class="chart-icon dust-icon">💨</div>
+                <h2 class="chart-title">Dust</h2>
+            </div>
+            <div class="chart-canvas-container">
                 <canvas id="dustChart"></canvas>
+            </div>
+            <div class="chart-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="dust-avg">--</div>
+                    <div class="stat-label">Average</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="dust-min">--</div>
+                    <div class="stat-label">Minimum</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="dust-max">--</div>
+                    <div class="stat-label">Maximum</div>
+                </div>
             </div>
         </div>
     </div>
 
+</div>
 {% endblock %}

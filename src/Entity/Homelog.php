@@ -35,6 +35,9 @@ class Homelog
     #[ORM\Column(nullable: true)]
     private ?float $tempOutside = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?float $dustDensityAverage = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -120,6 +123,18 @@ class Homelog
     public function setTempOutside(?float $tempOutside): static
     {
         $this->tempOutside = $tempOutside;
+
+        return $this;
+    }
+
+    public function getDustDensityAverage(): ?float
+    {
+        return $this->dustDensityAverage;
+    }
+
+    public function setDustDensityAverage(?float $dustDensityAverage): static
+    {
+        $this->dustDensityAverage = $dustDensityAverage;
 
         return $this;
     }

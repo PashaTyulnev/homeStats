@@ -16,7 +16,7 @@
             <div class="card-value">{{ total.score }} / 8</div>
             <div class="card-status status-{{ total.color }}">
                 <span class="status-indicator"></span>
-                <span class="status-text">{{ total.description }}</span>
+                <span class="status-text">{{ total.description }}, {% if diffInMinutes == 0%} aktuell {% else %}vor {{ diffInMinutes }} min{% endif %}</span>
             </div>
         </div>
     </div>
