@@ -32,6 +32,7 @@ class StatsService
         $datasetNames = array_keys($lastDaysData[0]);
         $output = [];
 
+
         foreach ($datasetNames as $name) {
             if ($name !== 'datetime') {
                 $output[$name] = [];

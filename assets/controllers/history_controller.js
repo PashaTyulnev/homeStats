@@ -2,14 +2,17 @@ import { Controller } from '@hotwired/stimulus';
 
 export default class extends Controller {
 
+
     connect() {
         this.temperatureChartInstance = null;
+        this.humidityChartInstance = null;
+        this.co2ChartInstance = null;
+        this.dustChartInstance = null;
 
         sessionStorage.setItem('lastDays', 1);
         this.initializeChart();
         this.updateActiveButton();
     }
-
     updateActiveButton() {
         const lastDays = sessionStorage.getItem('lastDays') || 1;
         const allButtons = document.querySelectorAll('[data-action="history#updateTimeRange"]');
@@ -25,11 +28,11 @@ export default class extends Controller {
 
             this.buildTemperatureChart('temperatureChart', data.xAxis, data.temperature, data.tempOutside);
             this.buildChart('humidityChart', data.xAxis, data.humidity, "#3498DB", "#85C1E9", 20, 80);
-            this.buildChart('co2Chart', data.xAxis, data.co2value, "#27AE60", "#7DCEA0", 400, 2000);
+            this.buildChart('co2Chart', data.xAxis, data.co2Value, "#27AE60", "#7DCEA0", 400, 2000);
             this.buildChart('dustChart', data.xAxis, data.dustDensityAverage, "#7F8C8D", "#D5DBDB", 0, 20);
             this.updateStats('temp', data.temperature, '°C');
             this.updateStats('humidity', data.humidity, '%');
-            this.updateStats('co2', data.co2value, ' ppm');
+            this.updateStats('co2', data.co2Value, ' ppm');
             this.updateStats('dust', data.dustDensityAverage, ' μg/m³');
 
     }
@@ -107,12 +110,23 @@ export default class extends Controller {
         const canvas = document.getElementById(id);
         if (!canvas) return;
 
+        // Bestehendes Chart-Objekt zerstören, falls vorhanden
+        const instanceMap = {
+            'humidityChart': 'humidityChartInstance',
+            'co2Chart': 'co2ChartInstance',
+            'dustChart': 'dustChartInstance'
+        };
+
+        const instanceKey = instanceMap[id];
+        if (this[instanceKey]) {
+            this[instanceKey].destroy();
+        }
+
         // Dynamisches Min/Max mit Puffer berechnen
         const min = Math.floor(Math.min(...values)) - 1;
         const max = Math.ceil(Math.max(...values)) + 1;
 
-        new Chart(canvas, {
-
+        this[instanceKey] = new Chart(canvas, {
             type: "line",
             data: {
                 labels,
@@ -152,6 +166,7 @@ export default class extends Controller {
             }
         });
     }
+
 
 
     updateStats(prefix, data, unit) {

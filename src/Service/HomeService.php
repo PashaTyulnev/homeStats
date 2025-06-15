@@ -16,6 +16,12 @@ class HomeService
     private const DUST_DENSITY_MOVING_AVERAGE_WINDOW = 50;
     private const BERLIN_TIMEZONE = 'Europe/Berlin';
 
+    // CO2 Grenzwerte für die Filterung
+    private const CO2_MIN_REALISTIC = 300;
+    private const CO2_MAX_REALISTIC = 5000;
+    private const CO2_STARTUP_THRESHOLD = 1800; // Werte über 1800ppm gelten als Startup-Anomalie
+    private const CO2_AVERAGE_SAMPLE_SIZE = 20;
+
     public function __construct(
         private EntityManagerInterface  $entityManager,
         private HomelogRepository       $homelogRepository,
@@ -31,7 +37,8 @@ class HomeService
         $temperature = $requestData['temperature'] ?? 0;
         $dustDensity = $requestData['dustDensity'] ?? 0;
 
-        $co2Value = $this->sanitizeCo2Value($requestData['co2'] ?? 0);
+        $rawCo2Value = $requestData['co2'] ?? 0;
+        $co2Value = $this->sanitizeCo2Value($rawCo2Value);
         $co2Temp = $requestData['co2temp'] ?? 0;
 
         if ($temperature === 0 || $humidity === 0) {
@@ -47,25 +54,70 @@ class HomeService
 
     private function sanitizeCo2Value(int $co2Value): int
     {
-        if ($co2Value !== 0) {
-            return $co2Value;
+        // Wenn der Wert 0 ist, verwende den letzten bekannten Wert
+        if ($co2Value === 0) {
+            return $this->getLastValidCo2Value();
         }
 
+        // Prüfe ob der Wert unrealistisch hoch ist (Startup-Problem)
+        if ($co2Value > self::CO2_STARTUP_THRESHOLD) {
+            error_log("CO2 Startup-Anomalie erkannt: {$co2Value}ppm - verwende Durchschnittswert");
+            return $this->getAverageCo2Value();
+        }
+
+        // Prüfe ob der Wert grundsätzlich im realistischen Bereich liegt
+        if ($co2Value < self::CO2_MIN_REALISTIC || $co2Value > self::CO2_MAX_REALISTIC) {
+            error_log("CO2 Wert außerhalb realistischem Bereich: {$co2Value}ppm - verwende Durchschnittswert");
+            return $this->getAverageCo2Value();
+        }
+
+        return $co2Value;
+    }
+
+    private function getLastValidCo2Value(): int
+    {
         $lastLog = $this->homelogRepository->createQueryBuilder('h')
-            ->where('h.co2value != 0')
+            ->where('h.co2value > :minCo2')
+            ->andWhere('h.co2value < :maxCo2')
+            ->setParameter('minCo2', self::CO2_MIN_REALISTIC)
+            ->setParameter('maxCo2', self::CO2_STARTUP_THRESHOLD)
             ->orderBy('h.datetime', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
 
-        return $lastLog?->getCo2Value() ?? 0;
+        return $lastLog?->getCo2Value() ?? 600; // Fallback auf typischen Außenluft-Wert
+    }
+
+    private function getAverageCo2Value(): int
+    {
+        $recentLogs = $this->homelogRepository->createQueryBuilder('h')
+            ->select('h.co2value')
+            ->where('h.co2value > :minCo2')
+            ->andWhere('h.co2value < :maxCo2')
+            ->setParameter('minCo2', self::CO2_MIN_REALISTIC)
+            ->setParameter('maxCo2', self::CO2_STARTUP_THRESHOLD)
+            ->orderBy('h.datetime', 'DESC')
+            ->setMaxResults(self::CO2_AVERAGE_SAMPLE_SIZE)
+            ->getQuery()
+            ->getResult();
+
+        if (empty($recentLogs)) {
+            error_log("Keine gültigen CO2-Werte für Durchschnittsberechnung gefunden - verwende Standardwert");
+            return 400; // Fallback auf typischen Außenluft-Wert
+        }
+
+        $co2Values = array_column($recentLogs, 'co2value');
+        $average = (int) round(array_sum($co2Values) / count($co2Values));
+
+        error_log("CO2 Durchschnitt aus " . count($co2Values) . " Werten: {$average}ppm");
+
+        return $average;
     }
 
     private function saveHomeLog(float $humidity, float $temperature, DateTime $date, float $dustDensity, int $co2Value, float $co2Temp): void
     {
-
         $averageDustDensity = $this->getAverageDustDensityLast300Seconds($date);
-
 
         $homelog = (new Homelog())
             ->setHumidity($humidity)
@@ -79,8 +131,7 @@ class HomeService
 
         $this->persistEntity($homelog);
 
-        //delete all older than 24H
-        // delete all older than 24H
+        // Delete all older than 24H
         $cutoffDate = (new DateTime())->modify('-24 hours');
 
         $this->entityManager->createQueryBuilder()
@@ -89,7 +140,6 @@ class HomeService
             ->setParameter('cutoff', $cutoffDate)
             ->getQuery()
             ->execute();
-
     }
 
     private function savePermanentData(float $humidity, float $temperature, DateTime $date, float $dustDensity, int $co2Value, float $co2Temp): void
@@ -113,6 +163,7 @@ class HomeService
                 ->setTemperature($temperature)
                 ->setDatetime($date)
                 ->setDustDensity($averageDustDensity)
+                ->setDustDensityAverage($averageDustDensity)
                 ->setCo2Value($co2Value)
                 ->setCo2Temp($co2Temp)
                 ->setTempOutside($this->getDresdenWeatherData());
@@ -142,11 +193,11 @@ class HomeService
         return round(array_sum($dustValues) / count($dustValues), 2);
     }
 
-// Verbesserte cleanupOldData Methode mit Null-Check
+    // Verbesserte cleanupOldData Methode mit Null-Check
     private function cleanupOldData(): void
     {
-        $this->deleteOlderThan($this->homelogRepository, '-1 hour');
-        $this->deleteOlderThan($this->permanentDataRepository, '-1 week');
+        $this->deleteOlderThan($this->homelogRepository, '-24 hour');
+        $this->deleteOlderThan($this->permanentDataRepository, '-10 week');
     }
 
     private function deleteOlderThan($repository, string $modifyString): void
@@ -234,7 +285,6 @@ class HomeService
         $data['dustDensity'] = $this->calculateMovingAverage($data['dustDensity'], self::DUST_DENSITY_MOVING_AVERAGE_WINDOW);
         $this->alignArrayLengths($data);
 
-
         return $data;
     }
 
@@ -285,7 +335,6 @@ class HomeService
         return ($now->getTimestamp() - $date->getTimestamp()) > $seconds;
     }
 
-
     private function isWithinLastHours(DateTime $date, int $hours, ?DateTime $now = null): bool
     {
         $now ??= new DateTime();
@@ -322,21 +371,54 @@ class HomeService
 
     private function getDresdenWeatherData(): float
     {
-        $url = 'https://api.open-meteo.com/v1/forecast?latitude=51.0509&longitude=13.7373&current_weather=true';
-
-        $response = $this->httpClient->request('GET', $url);
-        $content = $response->getContent();
-        $data = json_decode($content, true);
-
-        $temperature = $data['current_weather']['temperature'] ?? null;
-
-        if ($temperature !== null) {
-            // Wert gefunden, speichern als letzten bekannten Wert
-            $_SESSION['last_dresden_temp'] = $temperature;
-            return $temperature;
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
         }
 
-        // Kein Wert gefunden, letzten bekannten Wert zurückgeben, falls vorhanden
+        $now = time();
+        $lastFetchTime = $_SESSION['last_dresden_fetch_time'] ?? 0;
+
+        if (($now - $lastFetchTime) >= 60) {
+            // 1. Versuch: Open-Meteo
+            try {
+                $response = $this->httpClient->request('GET', 'https://api.open-meteo.com/v1/forecast?latitude=51.0509&longitude=13.7373&current_weather=true');
+                if ($response->getStatusCode() === 200) {
+                    $data = json_decode($response->getContent(), true);
+                    $temp = $data['current_weather']['temperature'] ?? null;
+
+                    if ($temp !== null) {
+                        $_SESSION['last_dresden_temp'] = $temp;
+                        $_SESSION['last_dresden_fetch_time'] = $now;
+                        return $temp;
+                    }
+                }
+            } catch (\Throwable) {
+                // Weiter zu Fallback
+            }
+
+            // 2. Fallback: MET Norway API (yr.no)
+            try {
+                $response = $this->httpClient->request('GET', 'https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=51.0509&lon=13.7373', [
+                    'headers' => [
+                        'User-Agent' => 'PepitoWeatherClient/1.0 kontakt@pep-ito.de'
+                    ]
+                ]);
+
+                if ($response->getStatusCode() === 200) {
+                    $data = json_decode($response->getContent(), true);
+                    $firstForecast = $data['properties']['timeseries'][0]['data']['instant']['details']['air_temperature'] ?? null;
+
+                    if ($firstForecast !== null) {
+                        $_SESSION['last_dresden_temp'] = $firstForecast;
+                        $_SESSION['last_dresden_fetch_time'] = $now;
+                        return $firstForecast;
+                    }
+                }
+            } catch (\Throwable) {
+                // beide APIs fehlgeschlagen
+            }
+        }
+
         return $_SESSION['last_dresden_temp'] ?? 0;
     }
 }
